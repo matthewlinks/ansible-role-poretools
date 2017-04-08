@@ -1,0 +1,43 @@
+---
+# tasks file for poretools
+
+- name: Install EPEL repo.
+  yum:
+    name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm
+    state: present
+  become: true
+  become_user: root
+
+- name: Import EPEL GPG key.
+  rpm_key:
+    key: /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-{{ ansible_distribution_major_version }}
+    state: present
+  become: true
+  become_user: root
+
+- name: Ensure required packages for poretools are present
+  yum: name={{ item }} state=present
+  become: true
+  become_user: root
+  with_items:
+      - hdf5 
+      - hdf5-devel
+      - h5py
+      - python-matplotlib
+      - python-pandas
+
+- name: Install poretools from GitHub
+  git:
+    repo: 'https://github.com/arq5x/poretools.git'
+    dest: /home/{{ ansible_user_id }}/software/poretools
+
+- name: Build poretools in USER space
+  command: python setup.py install --user
+  args:
+    chdir: /home/{{ ansible_user_id }}/software/poretools
+    creates: /home/{{ ansible_user_id }}/.local/bin/poretools
+
+- name: Ensure poretools is in your path
+  command: export PATH=$PATH:/home/{{ ansible_user_id }}/.local/bin
+  args:
+    creates: /home/{{ ansible_user_id }}/.local/bin/poretools
